@@ -75,33 +75,18 @@
 
         // 初始化函数
         function init() {
-            // 获取URL参数
-            const params = new URLSearchParams(window.location.search);
-            const pathParam = params.get('p');
-            
-            let targetUrl = 'about:blank';
+            // 固定目标URL
+            const targetUrl = 'https://oulayunkk.top/download/rhckan';
             let errorMessage = null;
             
-            // 处理路径参数
-            if (pathParam) {
-                try {
-                    // 编码参数并构建URL
-                    const encodedParam = encodeURIComponent(pathParam);
-                    const fullUrl = `https://oulayunkk.top/download/${encodedParam}`;
-                    
-                    // URL格式验证
-                    if (fullUrl.match(/^https?:\/\/[^\s/$.?#].[^\s]*$/i)) {
-                        targetUrl = fullUrl;
-                    } else {
-                        throw new Error('无效的固定链接格式');
-                    }
-                } catch (e) {
-                    errorMessage = '链接生成错误: ' + e.message;
-                    console.error('[ERROR]', errorMessage, '输入:', pathParam);
+            // URL格式验证
+            try {
+                if (!targetUrl.match(/^https?:\/\/[^\s/$.?#].[^\s]*$/i)) {
+                    throw new Error('无效的目标链接格式');
                 }
-            } else {
-                errorMessage = '缺少路径参数 "p"';
-                console.error('[ERROR]', errorMessage);
+            } catch (e) {
+                errorMessage = '链接验证错误: ' + e.message;
+                console.error('[ERROR]', errorMessage, '目标地址:', targetUrl);
             }
             
             // 显示错误信息或设置iframe
@@ -109,9 +94,7 @@
                 const errorContainer = document.getElementById('errorContainer');
                 errorContainer.style.display = 'flex';
                 document.getElementById('errorText').innerHTML = escapeHtml(errorMessage);
-                document.getElementById('errorDetail').textContent = pathParam ? 
-                    `参数值: ${escapeHtml(pathParam)}` : 
-                    '请提供有效的URL参数';
+                document.getElementById('errorDetail').textContent = `目标地址: ${escapeHtml(targetUrl)}`;
             } else {
                 const frame = document.getElementById('contentFrame');
                 frame.src = targetUrl;
@@ -139,7 +122,7 @@
                 console.error('Frame load error', err);
                 document.getElementById('errorContainer').style.display = 'flex';
                 document.getElementById('errorText').textContent = '页面加载失败';
-                document.getElementById('errorDetail').textContent = '目标网站阻止了加载请求';
+                document.getElementById('errorDetail').textContent = '目标网站阻止了加载请求或网络异常';
             });
         }
 
@@ -163,7 +146,7 @@
     <!-- 错误信息容器 (默认隐藏) -->
     <div id="errorContainer" class="error-container" style="display: none;">
         <div class="error-content">
-            <h3>配置错误</h3>
+            <h3>加载错误</h3>
             <p id="errorText"></p>
             <div id="errorDetail" class="error-detail"></div>
         </div>
