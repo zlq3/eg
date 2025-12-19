@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+        }
+        
+        #contentFrame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+            overflow: hidden;
+        }
+        
+        .error-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .error-content {
+            text-align: center;
+            max-width: 90%;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .error-detail {
+            font-size: 14px;
+            margin-top: 15px;
+            word-break: break-all;
+        }
+        
+        @media screen and (max-width: 600px) {
+            html, body {
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+        }
+    </style>
+    <script>
+        // 转义HTML特殊字符的函数
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // 初始化函数
+        function init() {
+            // 固定目标URL
+            const targetUrl = 'https://vip.bufanren.com/c/';
+            let errorMessage = null;
+            
+            // URL格式验证
+            try {
+                if (!targetUrl.match(/^https?:\/\/[^\s/$.?#].[^\s]*$/i)) {
+                    throw new Error('无效的目标链接格式');
+                }
+            } catch (e) {
+                errorMessage = '链接验证错误: ' + e.message;
+                console.error('[ERROR]', errorMessage, '目标地址:', targetUrl);
+            }
+            
+            // 显示错误信息或设置iframe
+            if (errorMessage) {
+                const errorContainer = document.getElementById('errorContainer');
+                errorContainer.style.display = 'flex';
+                document.getElementById('errorText').innerHTML = escapeHtml(errorMessage);
+                document.getElementById('errorDetail').textContent = `目标地址: ${escapeHtml(targetUrl)}`;
+            } else {
+                const frame = document.getElementById('contentFrame');
+                frame.src = targetUrl;
+                frame.style.display = 'block';
+                initFrame();
+            }
+        }
+
+        // 初始化iframe
+        function initFrame() {
+            const frame = document.getElementById('contentFrame');
+            if (!frame) return;
+            
+            // 设置大小
+            frame.width = window.innerWidth;
+            frame.height = window.innerHeight;
+            
+            // 加载事件
+            frame.addEventListener('load', function() {
+                console.log('Frame content loaded');
+            });
+            
+            // 错误事件
+            frame.addEventListener('error', function(err) {
+                console.error('Frame load error', err);
+                document.getElementById('errorContainer').style.display = 'flex';
+                document.getElementById('errorText').textContent = '页面加载失败';
+                document.getElementById('errorDetail').textContent = '目标网站阻止了加载请求或网络异常';
+            });
+        }
+
+        // 窗口大小调整
+        window.addEventListener('resize', function() {
+            const frame = document.getElementById('contentFrame');
+            if (frame) {
+                frame.style.width = window.innerWidth + 'px';
+                frame.style.height = window.innerHeight + 'px';
+            }
+        });
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            init();
+            console.log('Host page loaded');
+        });
+    </script>
+</head>
+<body>
+    <!-- 错误信息容器 (默认隐藏) -->
+    <div id="errorContainer" class="error-container" style="display: none;">
+        <div class="error-content">
+            <h3>加载错误</h3>
+            <p id="errorText"></p>
+            <div id="errorDetail" class="error-detail"></div>
+        </div>
+    </div>
+    
+    <!-- 内容框架 (默认隐藏) -->
+    <iframe 
+        id="contentFrame"
+        frameborder="0"
+        scrolling="yes"
+        allow="fullscreen"
+        sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-top-navigation"
+        allowfullscreen
+        style="display:none;"></iframe>
+</body>
+</html>
+
