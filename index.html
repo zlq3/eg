@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>....</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .title {
+            font-size: 20px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 10px;
+            color: #2d3748;
+        }
+        .desc {
+            font-size: 14px;
+            color: #718096;
+            text-align: center;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        .url-box {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            word-break: break-all;
+            font-size: 13px;
+            color: #4a5568;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            height: 48px;
+            line-height: 48px;
+            text-align: center;
+            background: #4299e1;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #3182ce;
+        }
+        .btn.copy-btn {
+            background: #48bb78;
+        }
+        .btn.copy-btn:hover {
+            background: #38a169;
+        }
+        .btn.wechat-tip {
+            background: #ed8936;
+        }
+        .btn.wechat-tip:hover {
+            background: #dd6b20;
+        }
+        .tips {
+            margin-top: 25px;
+            font-size: 12px;
+            color: #a0aec0;
+            line-height: 1.6;
+        }
+        .wechat-guide {
+            background: #fef7fb;
+            border: 1px solid #fdf2f8;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .hidden {
+            display: none;
+        }
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            z-index: 9999;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="toast" id="toast"></div>
+    <div class="container">
+        <h1 class="title">微信内无法直接跳转，请手动跳转</h1>
+        <p class="desc" id="env-tip">检测到您的环境，正在准备跳转...</p>
+        
+        <!-- 微信引导提示 -->
+        <div class="wechat-guide" id="wechat-guide">
+            <p style="font-size:14px;color:#e53e3e;margin-bottom:10px;text-align:center;">微信内无法直接跳转，请手动操作</p>
+            <p style="font-size:13px;line-height:1.5;">1. 点击页面右上角的「···」图标</p>
+            <p style="font-size:13px;line-height:1.5;">2. 选择「在浏览器中打开」</p>
+            <p style="font-size:13px;line-height:1.5;">3. 自动跳转至目标链接（无需手动点击）</p>
+        </div>
+        
+        <!-- 目标URL显示 -->
+        <div class="url-box" id="url-box">加载中...</div>
+        
+        <!-- 复制按钮 -->
+        <button class="btn copy-btn" id="copy-btn">复制链接</button>
+        
+        <!-- 微信专用提示按钮 -->
+        <button class="btn wechat-tip" id="wechat-btn">点击右上角 ··· 选择浏览器打开</button>
+        
+        <div class="tips">
+            <p>© 2025 链接跳转助手 | 本工具仅用于合法合规的链接跳转</p>
+        </div>
+    </div>
+
+    <script>
+        // 工具函数
+        const utils = {
+            // 显示提示框
+            showToast: (text, duration = 2000) => {
+                const toast = document.getElementById('toast');
+                toast.textContent = text;
+                toast.style.display = 'block';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, duration);
+            },
+            
+            // 复制文本到剪贴板
+            copyToClipboard: async (text) => {
+                try {
+                    if (navigator.clipboard) {
+                        await navigator.clipboard.writeText(text);
+                        return true;
+                    } else {
+                        // 兼容旧浏览器
+                        const textarea = document.createElement('textarea');
+                        textarea.value = text;
+                        textarea.style.position = 'fixed';
+                        textarea.style.left = '-9999px';
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        return true;
+                    }
+                } catch (err) {
+                    console.error('复制失败:', err);
+                    return false;
+                }
+            },
+            
+            // 检测运行环境
+            detectEnv: () => {
+                const ua = navigator.userAgent.toLowerCase();
+                return {
+                    isWechat: /micromessenger/.test(ua),
+                    isQQ: /qq\/\d+/.test(ua) && !/mqqbrowser/.test(ua),
+                    isQQBrowser: /mqqbrowser/.test(ua),
+                    isMobile: /mobile|android|ios|iphone|ipad|ipod/.test(ua),
+                    isBrowser: !/micromessenger/.test(ua) // 非微信都视为浏览器环境
+                };
+            },
+            
+            // 解析URL参数
+            getUrlParam: (name) => {
+                const reg = new RegExp(`(^|&)${name}=([^&]*)(&|$)`);
+                const r = window.location.search.substr(1).match(reg);
+                if (r != null) return decodeURIComponent(r[2]);
+                return null;
+            },
+            
+            // Base64解码
+            base64Decode: (str) => {
+                try {
+                    // 处理URL安全的Base64
+                    str = str.replace(/-/g, '+').replace(/_/g, '/');
+                    return decodeURIComponent(escape(atob(str)));
+                } catch (err) {
+                    console.error('Base64解码失败:', err);
+                    return null;
+                }
+            },
+            
+            // 验证URL合法性
+            isValidUrl: (url) => {
+                try {
+                    new URL(url);
+                    return true;
+                } catch (err) {
+                    return false;
+                }
+            },
+            
+            // 自动跳转至目标地址
+            autoJump: (url, delay = 500) => {
+                // 短延迟后自动跳转，确保页面加载完成
+                setTimeout(() => {
+                    window.location.href = url;
+                    // 备用方案（防止跳转失败）
+                    setTimeout(() => {
+                        if (window.location.href.indexOf(url) === -1) {
+                            window.open(url, '_blank');
+                        }
+                    }, 1000);
+                }, delay);
+            }
+        };
+
+        // 主逻辑
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 获取DOM元素
+            const envTip = document.getElementById('env-tip');
+            const urlBox = document.getElementById('url-box');
+            const copyBtn = document.getElementById('copy-btn');
+            const wechatBtn = document.getElementById('wechat-btn');
+            const wechatGuide = document.getElementById('wechat-guide');
+            const toast = document.getElementById('toast');
+            
+            // 检测环境
+            const env = utils.detectEnv();
+            let targetUrl = '';
+            
+            // 解析URL参数
+            const urlParam = utils.getUrlParam('url');
+            if (!urlParam) {
+                urlBox.textContent = '错误：未检测到目标链接参数';
+                envTip.textContent = '请在链接后添加 ?url=目标链接 或 ?url=Base64编码的链接';
+                copyBtn.disabled = true;
+                return;
+            }
+            
+            // 尝试解析URL（先尝试Base64解码，失败则用原始URL）
+            const decodedUrl = utils.base64Decode(urlParam) || urlParam;
+            if (utils.isValidUrl(decodedUrl)) {
+                targetUrl = decodedUrl;
+                urlBox.textContent = targetUrl;
+            } else {
+                urlBox.textContent = '错误：无效的链接格式';
+                envTip.textContent = '请检查链接是否正确';
+                copyBtn.disabled = true;
+                return;
+            }
+            
+            // 环境判断逻辑
+            if (env.isWechat) {
+                // 微信内：显示引导界面，不自动跳转
+                envTip.textContent = '微信内访问限制，请手动跳转';
+                wechatGuide.style.display = 'block';
+                wechatBtn.style.display = 'block';
+                
+                // 复制按钮功能
+                copyBtn.addEventListener('click', async () => {
+                    const success = await utils.copyToClipboard(targetUrl);
+                    if (success) {
+                        utils.showToast('链接复制成功！');
+                    } else {
+                        utils.showToast('复制失败，请手动复制');
+                    }
+                });
+            } else {
+                // 非微信环境（所有浏览器/QQ）：自动跳转
+                envTip.textContent = '正在自动跳转至目标地址...';
+                // 隐藏微信相关引导
+                wechatGuide.style.display = 'none';
+                wechatBtn.style.display = 'none';
+                
+                // 显示跳转提示
+                utils.showToast('即将跳转至目标链接...', 1500);
+                
+                // 立即自动跳转（500ms延迟确保提示显示）
+                utils.autoJump(targetUrl);
+                
+                // 复制按钮仍保留（备用）
+                copyBtn.addEventListener('click', async () => {
+                    const success = await utils.copyToClipboard(targetUrl);
+                    if (success) {
+                        utils.showToast('链接复制成功！');
+                    } else {
+                        utils.showToast('复制失败，请手动复制');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
